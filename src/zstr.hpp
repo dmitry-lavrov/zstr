@@ -186,13 +186,17 @@ public:
                     // process return code
                     if (ret != Z_OK && ret != Z_STREAM_END) throw Exception(zstrm_p, ret);
                     // update in&out pointers following inflate()
+                    std::streamoff unread=zstrm_p->avail_in;
                     in_buff_start = reinterpret_cast< decltype(in_buff_start) >(zstrm_p->next_in);
                     in_buff_end = in_buff_start + zstrm_p->avail_in;
+
                     out_buff_free_start = reinterpret_cast< decltype(out_buff_free_start) >(zstrm_p->next_out);
                     assert(out_buff_free_start + zstrm_p->avail_out == out_buff + buff_size);
                     // if stream ended, deallocate inflator
                     if (ret == Z_STREAM_END)
                     {
+                        // Roll back the input stream.
+                        sbuf_p->pubseekoff(-unread, std::ios_base::cur, std::ios_base::in);
                         delete zstrm_p;
                         zstrm_p = nullptr;
                     }
